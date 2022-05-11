@@ -338,45 +338,65 @@ public class Controlador {
 
         }
 
+     this.iniciarAlgoritmo(nodoInicial, nodoFinal, nodosDelSistema);
+
+    }
+
+
+    public void iniciarAlgoritmo(Nodo nodoInicial, Nodo nodoFinal, List<Nodo>nodosDelSistema){
+        //Inicio del algoritmo A *
+
         List<Nodo>nodosAbiertos = new ArrayList<Nodo>();
         List<Nodo>nodosCerrados = new ArrayList<Nodo>();
-    
-        //Todos los nodos que van a formar parte de la ejecucion de este programa se colocan inicialmente en esta lista
-      //  List<Nodo>nodosDelSistema = this.cargarTodosLosNodos();
-       
-        //controlador.calcularCostoDeLosSaltos();
-        
-        //Nodo nodoInicial = nodosDelSistema.get(0);   //nodo origen tiene G=0 ya que es el punto de partida por el cual inicia el algoritmo, por lo que no tiene un costo de salto
-        //Nodo nodoFinal = nodosDelSistema.get(nodosDelSistema.size()-1); //nodo final tiene H=0 ya que es el distino al que todos los nodos deben llegar
-        Nodo nodoViejo = null;
-    
-        //calculando la distancia euclidea de cada nodo respecto al nodo Final (El valor de H que va a tener cada nodo)
-        /** 
-        for(Nodo nodo : nodosDelSistema){
-            nodo.setH(controlador.calcularDistanciaEuclidea(nodo, nodoFinal));
-        }
-        */
-        
+        Nodo nodoViejo = null;            
         boolean nodoFinalEncontrado = false;
         nodosAbiertos.add(nodoInicial);
         Nodo nodoActual = nodoInicial;
-        //Inicio del algoritmo A *
         List<Nodo>camino = new ArrayList<Nodo>();
+        int cont=0;
+        StringBuilder stringAlgoritmo = new StringBuilder();  //Variable que nos va a ayudar a documentar cada iteración del algoritmo para posteriormente mostrarlo por pantalla
+        stringAlgoritmo.append("Nodo inicial: "+nodoInicial.getId() + " ; " + " Nodo final: "+ nodoFinal.getId() + "\n");
 
         while (nodoFinalEncontrado == false){
             nodoActual = this.obtenerNodoConMenorF(nodosAbiertos);
             nodosAbiertos.remove(nodoActual);
-            nodosCerrados.add(nodoActual);
+            nodosCerrados.add(nodoActual);            
             if (nodoActual == nodoFinal){
                 nodoFinal.setPadre(nodoViejo);
                 nodoFinalEncontrado = true;
                 camino= this.obtenerCamino(nodoFinal);
+                this.documentarProceso(stringAlgoritmo,cont,nodoActual,nodosAbiertos,nodosCerrados);
                 break; //llegamos al nodo final, por ende, salimos del bucle
             }
             nodoViejo=nodoActual;
-            this.ponerNodosVecinosEnListaAbiertos(nodoActual, nodosAbiertos, nodosCerrados);        
+            this.documentarProceso(stringAlgoritmo,cont,nodoActual,nodosAbiertos,nodosCerrados);
+            this.ponerNodosVecinosEnListaAbiertos(nodoActual, nodosAbiertos, nodosCerrados);
+            cont++;        
         }
+
+        this.imprimirResultadosEnConsola(nodosAbiertos, nodosCerrados, camino, nodosDelSistema);
         
+    }
+
+    public void documentarProceso(StringBuilder stringAlgoritmo, int cont, Nodo nodoActual, List<Nodo> nodosAbiertos, List<Nodo>nodosCerrados){
+        stringAlgoritmo.append("\n------------------------------------------------------------\n");
+        stringAlgoritmo.append("Resultado de la Iteración: "+cont+"\n");
+        stringAlgoritmo.append("Nodo actual: "+nodoActual.getId() + "; G: "+String.format("%.2f", nodoActual.getG()) + "; H: " +String.format("%.2f", nodoActual.getH()) 
+                                + ";  F: "+String.format("%.2f", nodoActual.getF()));
+        stringAlgoritmo.append("\nNodos abiertos:");
+        for(Nodo nodo : nodosAbiertos){
+            stringAlgoritmo.append("\n    Nodo: "+nodo.getId()+ "; G: "+String.format("%.2f", nodo.getG()) + "; H: " +String.format("%.2f", nodo.getH())
+                                    + ";  F: "+String.format("%.2f", nodo.getF()));    
+        }
+        stringAlgoritmo.append("\nNodos cerrados:");
+        for(Nodo nodo : nodosCerrados){
+            stringAlgoritmo.append("\n    Nodo: "+nodo.getId()+ "; G: "+String.format("%.2f", nodo.getG()) + "; H: " +String.format("%.2f", nodo.getH())
+                                    + ";  F: "+String.format("%.2f", nodo.getF()));    
+        }
+
+    }
+
+    public void imprimirResultadosEnConsola(List<Nodo> nodosAbiertos, List<Nodo>nodosCerrados, List<Nodo>camino, List<Nodo>nodosDelSistema){
         //camino = controlador.obtenerCamino(nodoFinal,camino);
         System.out.println("------------------------------------------------------------------------------------");
         System.out.println("------------------------------------------------------------------------------------");
@@ -402,10 +422,7 @@ public class Controlador {
         for(Nodo nodos : nodosCerrados){
             System.out.println(nodos.getId());    
         }
-
     }
-
-
 
 
 
