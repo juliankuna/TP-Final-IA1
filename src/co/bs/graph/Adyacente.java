@@ -6,11 +6,16 @@ public class Adyacente {
     public double peso;//el peso es de este tipo para acercarlo a la realidad....
     public Adyacente sig;
     boolean dirigido = true;
-    
-    public Adyacente(Vertice nombre, double peso) {
+    public Adyacente(Vertice nombre, double peso, boolean dirigido) {
         this.vertice = nombre;
         this.peso = peso;
-        this.sig = null;        
+        this.sig = null;
+        this.dirigido = dirigido;
+    }
+
+    
+    public double getPeso(){
+        return this.peso;
     }
     
     @Override

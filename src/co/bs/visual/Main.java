@@ -8,7 +8,9 @@ public class Main {
 
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new FrmPrincipal(controlador).setVisible(true);
+                FrmPrincipal frame1 = new FrmPrincipal(controlador);
+                frame1.setVisible(true);
+                
                 new FrmSabiasQue().setVisible(true);
             }
         });

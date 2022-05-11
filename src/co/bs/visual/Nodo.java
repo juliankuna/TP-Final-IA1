@@ -8,7 +8,6 @@ public class Nodo {
     private double coordenadaX;
     private String id;
     private double G;
-    private double F;
     private double H; //Valor de la Eurísitica
     private Nodo padre;
     private List<Nodo> vecinos= new ArrayList<Nodo>();   
@@ -18,13 +17,12 @@ public class Nodo {
     }
 
     //El nodo inicial no tiene nodo padre
-    public Nodo (String id, double x, double y, double g, double h, double f, List<Nodo>vecinos){
+    public Nodo (String id, double x, double y, double g, double h, List<Nodo>vecinos){
         this.id = id;
         this.coordenadaX = x;
         this.coordenadaY = y;
         this.G = g;
         this.H = h;
-        this.F = f;
         this.vecinos = vecinos;
     }
     
@@ -34,7 +32,6 @@ public class Nodo {
         this.coordenadaY = y;
         this.G = g;
         this.H = h;
-        this.F = f;
         this.padre = padre;
         this.vecinos = vecinos;
     }
@@ -77,14 +74,10 @@ public class Nodo {
 
     public void setG(double costoSalto){
         this.G = costoSalto;        
-    }
-
-    public void setF(double Fn){
-        this.F = Fn;
-    }
+    } 
 
     public double getF(){
-        return this.F;
+        return this.G+this.H;
     }
 
     public void setH(double h){
