@@ -116,8 +116,8 @@ public class Controlador {
             cont++;        
         }
         this.imprimirResultadosEnConsola(nodosAbiertos, nodosCerrados, camino, nodosDelSistema);
-        
-    }
+        this.mostrarResultadosEnPantalla(stringAlgoritmo.toString());
+    }   
 
     /**
      * Método inicial usado para harcodear un grafo de prueba para analizar el funcionamiento del algoritmo ya que no teniamos GUI. Actualmente no se utiliza.
@@ -427,6 +427,12 @@ public class Controlador {
         }
     }
 
-
+    /**
+     * Genera un popUp donde se muestra la documentación generada por el algoritmo y los resultados finales
+     * @author Diego Zitelli
+     */
+    public void mostrarResultadosEnPantalla(String mensaje){
+        new FrmResultado(mensaje).setVisible(true);
+    }
 
 }
