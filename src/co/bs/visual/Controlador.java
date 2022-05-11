@@ -15,6 +15,114 @@ public class Controlador {
 
     private List<CostoSalto> costoSaltos = new ArrayList<CostoSalto>();
 
+    /**
+     * Método que permite la interacción entre la GUI implementada y el algoritmo desarollado por nuestro grupo
+     * @author Diego Zitelli, Julian Kunaschik
+     * @throws Exception
+     */
+    public void proceso_de_Inicio(Grafo grafo,String nombreInicio,String nombreFin) throws Exception{
+        Nodo nodoInicial = null;
+        Nodo nodoFinal = null;
+        Adyacente inicioAd;       
+
+        List<Nodo> nodosDelSistema=new ArrayList<Nodo>();
+        Vertice verticeInicio = grafo.cab;
+
+
+        while(verticeInicio!=null){
+            Nodo nodo = new Nodo(verticeInicio.getNombreVertice(),verticeInicio.getCenterX(),verticeInicio.getCenterY());
+            nodosDelSistema.add(nodo);            
+            verticeInicio=verticeInicio.siguienteVerticeEnLista;
+        }
+       
+        for (Nodo nodo : nodosDelSistema) {
+            if(nodo.getId().equals(nombreInicio)){
+                nodoInicial=nodo;
+            }
+            if (nodo.getId().equals(nombreFin)) {
+                nodoFinal=nodo;
+            }
+        }
+        
+        
+        for (Nodo nodo : nodosDelSistema) {
+            verticeInicio = grafo.cab;
+            while(verticeInicio!=null){
+                if (verticeInicio.getNombreVertice().equals(nodo.getId())) {
+                    inicioAd=verticeInicio.listaAdyacenciaSaliente;
+                    while (inicioAd !=null) {
+                        for (Nodo nodo2 : nodosDelSistema) {
+                            
+                            if (inicioAd.vertice.getNombreVertice().equals(nodo2.getId())) {
+                                
+                                //cargando los nodos vecinos
+                                nodo.getVecinos().add(nodo2);
+                                nodo2.setH(this.calcularDistanciaEuclidea(nodo2, nodoFinal));
+                                CostoSalto costoSalto = new CostoSalto(nodo, nodo2, inicioAd.peso);
+                                this.costoSaltos.add(costoSalto);
+                                break;
+                            }
+                        }
+                        inicioAd= inicioAd.sig;
+                    }
+                    break;
+                } 
+                verticeInicio=verticeInicio.siguienteVerticeEnLista;
+            }
+        }
+       
+        if ((nodoInicial == null) || (nodoFinal == null)) {
+            throw new Exception("Elija Vertices Inicial-Final Correctos.");
+
+        }
+
+     this.iniciarAlgoritmo(nodoInicial, nodoFinal, nodosDelSistema);
+
+    }
+
+    /**
+    *Logica pura y dura del algoritmo
+    *@author: Julian Kunaschik, Diego Zitelli, Santiago Saucedo
+    *
+    */
+    public void iniciarAlgoritmo(Nodo nodoInicial, Nodo nodoFinal, List<Nodo>nodosDelSistema){
+        //Inicio del algoritmo A *
+
+        List<Nodo>nodosAbiertos = new ArrayList<Nodo>();
+        List<Nodo>nodosCerrados = new ArrayList<Nodo>();
+        Nodo nodoViejo = null;            
+        boolean nodoFinalEncontrado = false;
+        nodosAbiertos.add(nodoInicial);
+        Nodo nodoActual = nodoInicial;
+        List<Nodo>camino = new ArrayList<Nodo>();
+        int cont=0;
+        StringBuilder stringAlgoritmo = new StringBuilder();  //Variable que nos va a ayudar a documentar cada iteración del algoritmo para posteriormente mostrarlo por pantalla
+        stringAlgoritmo.append("Nodo inicial: "+nodoInicial.getId() + " ; " + " Nodo final: "+ nodoFinal.getId() + "\n");
+
+        while (nodoFinalEncontrado == false){
+            nodoActual = this.obtenerNodoConMenorF(nodosAbiertos);
+            nodosAbiertos.remove(nodoActual);
+            nodosCerrados.add(nodoActual);            
+            if (nodoActual == nodoFinal){
+                nodoFinal.setPadre(nodoViejo);
+                nodoFinalEncontrado = true;
+                camino= this.obtenerCamino(nodoFinal);
+                this.documentarProceso(stringAlgoritmo,cont,nodoActual,nodosAbiertos,nodosCerrados);
+                break; //llegamos al nodo final, por ende, salimos del bucle
+            }
+            nodoViejo=nodoActual;
+            this.documentarProceso(stringAlgoritmo,cont,nodoActual,nodosAbiertos,nodosCerrados);
+            this.ponerNodosVecinosEnListaAbiertos(nodoActual, nodosAbiertos, nodosCerrados);
+            cont++;        
+        }
+        this.imprimirResultadosEnConsola(nodosAbiertos, nodosCerrados, camino, nodosDelSistema);
+        
+    }
+
+    /**
+     * Método inicial usado para harcodear un grafo de prueba para analizar el funcionamiento del algoritmo ya que no teniamos GUI. Actualmente no se utiliza.
+     * @author Julian Kunaschik, Diego Zitelli, Santiago Saucedo
+     */
     public List<Nodo> cargarTodosLosNodos() {
         /**
          * Esto se haria con la logica de interacción de la interfaz, pero para provar
@@ -134,14 +242,10 @@ public class Controlador {
     }
 
     /**
-     * Para la Interfaz Gráfica
-     * public List<CostoSalto> calcularCostoDeLosSaltos(){
-     * //determina el costo de paso de cada nodo hacia cada uno de sus respectivos
-     * vecinos
-     * //Se carga la lista de costoSaltos
-     * }
+     * Devuelve el costo de paso del nodo origen hacia el nodo destino, incluyendo el costo acumulado desde el nodo de origen
+     *@author Julian Kunaschik, Santiago Saucedo
      **/
-    public double getCostoSaltos(Nodo nodoOrigen, Nodo nodoDestino) {
+    public double getCostoSalto(Nodo nodoOrigen, Nodo nodoDestino) {
         double costo = 0;
         for (CostoSalto salto : this.costoSaltos) {
             if ((salto.getOrigen() == nodoOrigen && salto.getDestino() == nodoDestino)
@@ -153,23 +257,32 @@ public class Controlador {
         return costo;
     }
 
-
+    /**
+     * Devuelve el valor del segmento de la recta que comunica a ambos nodos
+     * @author Santiago Saucedo, Zitelli Diego
+     * @return
+     */
+    public double calcularDistanciaEuclidea(Nodo nodoOrigen, Nodo nodoDestino) { // cambiar a float
+        // Calculando la pendiente de la recta retornamos el valor absoluto de las diferencias de las imagenes de cada nodo
+        // evaluado en la recta que los comunica 
+        double xx = (nodoDestino.getCoordenadaX() - nodoOrigen.getCoordenadaX());
+        double yy = (nodoDestino.getCoordenadaY() - nodoOrigen.getCoordenadaY());
+        return  Math.sqrt(xx*xx + yy*yy);
+    }
+   
+    /**
+     * Devuelve el nodo con menor valor de F de la lista de nodos abiertos
+     * @author Julian Kunaschik, Diego Zitelli
+     * @return mejorNodo
+     */
     public Nodo obtenerNodoConMenorF(List<Nodo> nodosAbiertos) {
         if (nodosAbiertos.size() == 1) {
-
-            // Significa que un solo nodo existe en la lista, por lo que no hace falta
-            // iterar la lista.
-            // Ejemplo: cuando solo esté cargado el nodo inicial en la primer iteración del
-            // algoritmo
-
+            // Significa que un solo nodo existe en la lista, por lo que no hace falta iterar la lista.
+            // Ejemplo: cuando solo esté cargado el nodo inicial en la primer iteración del algoritmo
             return nodosAbiertos.get(0);
-
         } else {
-            // VER QUE ONDA CON EL TEMA DE UN POSIBLE EMPATE ENTRE DOS VALORES DE F COMO SE
-            // DECIDE CUAL ELEGIR
             Nodo nodoConMenorF = null;
-            double fAux = 1000000; // se coloca un valor arbitrariamente alto para que se sobrescriba con el valor
-                                  // de la F del primer nodo de la lista
+            double fAux = 1000000; // se coloca un valor arbitrariamente alto para que se sobrescriba con el valor de la F del primer nodo de la lista
             for (Nodo nodo : nodosAbiertos) {
                 if (nodo.getF() < fAux) {
                     nodoConMenorF = nodo;
@@ -180,63 +293,53 @@ public class Controlador {
         }
     }
 
+    /**
+     * Carga los vecinos del nodo actual en la lista de nodos abiertos. Además, invoca al método que calcula los valores respectivos de F para cada nodo.
+     * @author Julian Kunaschik, Diego Zitelli
+     */
     public void ponerNodosVecinosEnListaAbiertos(Nodo nodoActual, List<Nodo> nodosAbiertos, List<Nodo> nodosCerrados) {
         List<Nodo> nodosVecinos = nodoActual.getVecinos();
         for (Nodo nodo : nodosVecinos) {
-
-            // CONSULTAR AL PROFE SI ESTA BIEN ESTE FILTRO DE SI YA SE ENCUENTRA EN LA LISTA
-            // DE NODOS CERRADOS
-            if (!nodosAbiertos.contains(nodo) && !nodosCerrados.contains(nodo)) {
-                // significa que el nodo vecino no está en la lista de nodos abiertos, por ende,
-                // lo agregamos
+            if (!nodosAbiertos.contains(nodo) && !nodosCerrados.contains(nodo)) {      
                 nodosAbiertos.add(nodo);
             }
             if (!nodosCerrados.contains(nodo))
             this.calcularCostoDePasoAlNodo(nodoActual, nodo, nodosAbiertos, nodosCerrados);
         }
 
-    }
+    }    
 
-    public double calcularDistanciaEuclidea(Nodo nodoOrigen, Nodo nodoDestino) { // cambiar a float
-        // Calculando la pendiente de la recta
-        // retornamos el valor absoluto de las diferencias de las imagenes de cada nodo
-        // evaluado en la recta que los comunica
-        // x1, y1 = x
-        // x2, y2 = y
-        // return math.sqrt((x1-x2)**2 + (y1-y2)**2) //
-        double xx = (nodoDestino.getCoordenadaX() - nodoOrigen.getCoordenadaX());
-        double yy = (nodoDestino.getCoordenadaY() - nodoOrigen.getCoordenadaY());
-        return  Math.sqrt(xx*xx + yy*yy);
-    }
-
+    /**
+     * Calcula el costo de salto desde el nodo actual hacia su nodo vecino.
+     * Si mejora el valor de F actual del nodo vecino, actualiza el valor de G y el padre del nodo vecino.
+     * Y si además, el nodo vecino se encontraba en la lista de cerrados, se invoca al método que clausure esa rama ineficiente para que no se vuelva a evaluar
+     * @author Julian Kunaschik, Saucedo Santiago
+     */
     public void calcularCostoDePasoAlNodo(Nodo nodoActual, Nodo nodoVecino, List<Nodo> nodosAbiertos, List<Nodo> nodosCerrados) {
-        double valorSalto = this.getCostoSaltos(nodoActual, nodoVecino); // obtiene el valor del salto
-        //valorSalto = salto de nodoActual a nodoVecino + nodoActual.getG()
-
+        double valorSalto = this.getCostoSalto(nodoActual, nodoVecino); 
         if (nodoVecino.getG() == 0) {
             nodoVecino.setG(valorSalto);          
             nodoVecino.setPadre(nodoActual);
         }
         if (nodoVecino.getF() > (valorSalto + nodoVecino.getH())) {
             if(nodosCerrados.contains(nodoVecino)){
+                //Significa que encontramos un camino mas eficiente hacia ese nodo de la lista de nodos cerrados, por ende, borramos la rama ineficiente de ambas listas
                 this.clausurarRamaIneficiente(nodoVecino, nodosAbiertos);
                 this.clausurarRamaIneficiente(nodoVecino, nodosCerrados);
             }
-            // el nuevo valor de g se calcula como el costo de salto al nodo vecino, mas el
-            // valor de G del nodo actual, mas el valor de la heuritica del nodo vecino
-
-            // Actualizamos los valores para el nodo vecinos
-            // significa que el nuevo F es mejor, por lo tanto actualizamos F y G en el nodo
-            // Vecino
+            // significa que el nuevo F es mejor, por lo tanto actualizamos G en el nodo vecino y el nodo padre
             nodoVecino.setG(valorSalto);          
-            // Actualizamos el padre del nodoVecino para indicar cual es su nuevo padre con
-            // un camino mas optimo
-            nodoVecino.setPadre(nodoActual);
+            // Actualizamos el padre del nodoVecino para indicar cual es su nuevo padre con un camino mas eficiente
+            nodoVecino.setPadre(nodoActual);            
         }
     }
 
+    /**
+     * Quita de la lista de nodos recibida, todos los nodos cuyo padre sea el nodo recibido por parámetro
+     * @author Saucedo Santiago
+     */
     public void clausurarRamaIneficiente(Nodo nodoAModificar, List<Nodo> nodos){
-        //Borramos los nodos que descienden de el nodo que se va a actualizar en la lista de nodos abiertos y de nodos cerrados
+        //Borramos en la lista de nodos abiertos y de nodos cerrados, los nodos que descienden del nodo que se va a actualizar 
         for(Nodo nodo : nodos){
             if(nodo.getPadre().equals(nodoAModificar)){
                 nodos.remove(nodo); 
@@ -245,12 +348,16 @@ public class Controlador {
         }        
     }
 
-
-    public List<Nodo> obtenerCamino(Nodo nodo) {
+    /**
+     * Devuelve el camino recorrido desde el nodo inicial hasta el nodo final, aplicando backtracking desde este último.
+     * @author Julian Kunaschik, Diego Zitelli
+     * @return
+     */
+    public List<Nodo> obtenerCamino(Nodo nodoFinal) {
         List<Nodo> camino = new ArrayList<Nodo>();
-        camino.add(nodo); // agrega el nodo final
+        camino.add(nodoFinal); // agrega el nodo final
         boolean bandera = false;
-        Nodo nodoAux = nodo.getPadre(); // nodoAux = 4
+        Nodo nodoAux = nodoFinal.getPadre(); // nodoAux = 4
         while (bandera == false) {
             Nodo nodo2 = nodoAux.getPadre(); // nodo2 = null
             camino.add(0, nodoAux); // camino = 1,4,7
@@ -263,121 +370,12 @@ public class Controlador {
 
         return camino;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    public void proceso_de_Inicio(Grafo grafo,String nombreInicio,String nombreFin) throws Exception{
-        Nodo nodoInicial = null;
-        Nodo nodoFinal = null;
-        Adyacente inicioAd;       
-
-        List<Nodo> nodosDelSistema=new ArrayList<Nodo>();
-        Vertice verticeInicio = grafo.cab;
-
-
-        while(verticeInicio!=null){
-            Nodo nodo = new Nodo(verticeInicio.getNombreVertice(),verticeInicio.getCenterX(),verticeInicio.getCenterY());
-            nodosDelSistema.add(nodo);            
-            verticeInicio=verticeInicio.siguienteVerticeEnLista;
-        }
-       
-        for (Nodo nodo : nodosDelSistema) {
-            if(nodo.getId().equals(nombreInicio)){
-                nodoInicial=nodo;
-            }
-            if (nodo.getId().equals(nombreFin)) {
-                nodoFinal=nodo;
-            }
-        }
-        
-        
-        for (Nodo nodo : nodosDelSistema) {
-            verticeInicio = grafo.cab;
-            while(verticeInicio!=null){
-                if (verticeInicio.getNombreVertice().equals(nodo.getId())) {
-                    inicioAd=verticeInicio.listaAdyacenciaSaliente;
-                    while (inicioAd !=null) {
-                        for (Nodo nodo2 : nodosDelSistema) {
-                            
-                            if (inicioAd.vertice.getNombreVertice().equals(nodo2.getId())) {
-                                
-                                //cargando los nodos vecinos
-                                nodo.getVecinos().add(nodo2);
-                                nodo2.setH(this.calcularDistanciaEuclidea(nodo2, nodoFinal));
-                                CostoSalto costoSalto = new CostoSalto(nodo, nodo2, inicioAd.peso);
-                                this.costoSaltos.add(costoSalto);
-                                break;
-                            }
-                        }
-                        inicioAd= inicioAd.sig;
-                    }
-                    break;
-                } 
-                verticeInicio=verticeInicio.siguienteVerticeEnLista;
-            }
-        }
-       
-        if ((nodoInicial == null) || (nodoFinal == null)) {
-            throw new Exception("Elija Vertices Inicial-Final Correctos.");
-
-        }
-
-     this.iniciarAlgoritmo(nodoInicial, nodoFinal, nodosDelSistema);
-
-    }
-
-
-    public void iniciarAlgoritmo(Nodo nodoInicial, Nodo nodoFinal, List<Nodo>nodosDelSistema){
-        //Inicio del algoritmo A *
-
-        List<Nodo>nodosAbiertos = new ArrayList<Nodo>();
-        List<Nodo>nodosCerrados = new ArrayList<Nodo>();
-        Nodo nodoViejo = null;            
-        boolean nodoFinalEncontrado = false;
-        nodosAbiertos.add(nodoInicial);
-        Nodo nodoActual = nodoInicial;
-        List<Nodo>camino = new ArrayList<Nodo>();
-        int cont=0;
-        StringBuilder stringAlgoritmo = new StringBuilder();  //Variable que nos va a ayudar a documentar cada iteración del algoritmo para posteriormente mostrarlo por pantalla
-        stringAlgoritmo.append("Nodo inicial: "+nodoInicial.getId() + " ; " + " Nodo final: "+ nodoFinal.getId() + "\n");
-
-        while (nodoFinalEncontrado == false){
-            nodoActual = this.obtenerNodoConMenorF(nodosAbiertos);
-            nodosAbiertos.remove(nodoActual);
-            nodosCerrados.add(nodoActual);            
-            if (nodoActual == nodoFinal){
-                nodoFinal.setPadre(nodoViejo);
-                nodoFinalEncontrado = true;
-                camino= this.obtenerCamino(nodoFinal);
-                this.documentarProceso(stringAlgoritmo,cont,nodoActual,nodosAbiertos,nodosCerrados);
-                break; //llegamos al nodo final, por ende, salimos del bucle
-            }
-            nodoViejo=nodoActual;
-            this.documentarProceso(stringAlgoritmo,cont,nodoActual,nodosAbiertos,nodosCerrados);
-            this.ponerNodosVecinosEnListaAbiertos(nodoActual, nodosAbiertos, nodosCerrados);
-            cont++;        
-        }
-
-        this.imprimirResultadosEnConsola(nodosAbiertos, nodosCerrados, camino, nodosDelSistema);
-        
-    }
-
+    
+     /**
+    *Método para documentar el avance de cada iteración del algoritmo en un string que se mostrará en un popup
+    *@author: Julian Kunaschik
+    *
+    */
     public void documentarProceso(StringBuilder stringAlgoritmo, int cont, Nodo nodoActual, List<Nodo> nodosAbiertos, List<Nodo>nodosCerrados){
         stringAlgoritmo.append("\n------------------------------------------------------------\n");
         stringAlgoritmo.append("Resultado de la Iteración: "+cont+"\n");
@@ -396,6 +394,11 @@ public class Controlador {
 
     }
 
+     /**
+    *Método para visualizar en la consola los resultados de la ejecución del algoritmo
+    *@author: Santiago Saucedo
+    *
+    */
     public void imprimirResultadosEnConsola(List<Nodo> nodosAbiertos, List<Nodo>nodosCerrados, List<Nodo>camino, List<Nodo>nodosDelSistema){
         //camino = controlador.obtenerCamino(nodoFinal,camino);
         System.out.println("------------------------------------------------------------------------------------");
